@@ -38,45 +38,12 @@
 				options = this.options;
 
 
-			var addCssRule = function(/* string */ selector, /* string */ rule) {
-				if (document.styleSheets) {
-					if (!document.styleSheets.length) {
-						var head = document.getElementsByTagName('head')[0];
-						head.appendChild(bc.createEl('style'));
-					}
-
-					var i = document.styleSheets.length-1;
-					var ss = document.styleSheets[i];
-
-					var l=0;
-					if (ss.cssRules) {
-						l = ss.cssRules.length;
-					} else if (ss.rules) {
-						// IE
-						l = ss.rules.length;
-					}
-
-					try {
-						if (ss.insertRule) {
-							ss.insertRule(selector + ' {' + rule + '}', l);
-						} else if (ss.addRule) {
-							// IE
-							ss.addRule(selector, rule, l);
-						}
-					} catch (e) {
-						console.log(e.name)
-					} finally {
-						// console.log("finished")
-					}
-				}
-			};
-
-
 			if(options.addCssRule) {
-				// WebKIT
-				addCssRule('input[type="search"]::-webkit-search-cancel-button', 'display: none;');
-				// IE
-				addCssRule('::-ms-clear', 'display: none;');
+				// WebKIT and IE
+				$("<style>")
+					.attr("type", "text/css")
+					.html('input[type="search"]::-webkit-search-cancel-button{display:none;}::-ms-clear{display:none;}')
+					.appendTo("head");
 			}
 
 			var $wrapper = $this.wrap("<div style='position:relative;display:inline-block;margin:0;padding:0;'/>").parent();
