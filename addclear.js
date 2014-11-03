@@ -8,11 +8,9 @@
 	var pluginName = "addClear",
 		defaults = {
 			closeSymbol: "&#10006;",
-			color: "#CCC",
-			top: 1,
-			right: 4,
+			color: "#cccccc",
 			returnFocus: true,
-			showOnLoad: false,
+			showOnLoad: true,
 			onClear: null,
 			hideOnBlur: false
 		};
@@ -36,48 +34,85 @@
 					me = this,
 					options = this.options;
 
-			$this.wrap("<span style='position:relative;' class='add-clear-span'></span>");
-			$this.after($("<a href='#clear' style='display: none;'>" + options.closeSymbol + "</a>"));
-			$this.next().css({
+			var $wrapper = $this.wrap("<div style='position:relative;display:inline-block;margin:0;padding:0;'/>").parent();
+			var $closeSymbol = $this.after("<div style='display: none;'>" + options.closeSymbol + "</div>").next();
+			$closeSymbol.css({
 				color: options.color,
 				'text-decoration': 'none',
-				display: 'none',
-				'line-height': 1,
+				'text-align': 'center',
 				overflow: 'hidden',
 				position: 'absolute',
-				right: options.right,
-				top: options.top
-			}, this);
+				margin: 0,
+				cursor: 'pointer',
+				'box-sizing': 'border-box',
+				'-webkit-tap-highlight-color': 'rgba(0,0,0,0)',
+				'-webkit-touch-callout': 'none',
+				'-webkit-user-select': 'none'
+			});
 
-			if ($this.val().length >= 1 && options.showOnLoad === true) {
-				$this.siblings("a[href='#clear']").show();
+
+			// Copy the essential styles (mimics) from input to the closeSymbol
+			var mimics = [
+				'paddingTop',
+				'paddingBottom',
+				'fontSize',
+				'fontStyle',
+				'fontFamily',
+				'fontWeight',
+				'lineHeight',
+				'wordSpacing',
+				'letterSpacing',
+				'textTransform'
+			];
+			var i = mimics.length;
+			while(i--) $closeSymbol.css(mimics[i].toString(), $this[0].style[mimics[i].toString()]);
+
+			// Fix width of input
+			if ($this[0].style['width'].indexOf('%') > 0) {
+					$wrapper.css({'width': $this[0].style['width']});
+					$this.css({'width': '100%'});
 			}
+
+			// Move css float from input to wrapper
+			$wrapper.css({'float': $this[0].style.cssFloat});
+			$this.css({'float': ''});
+
+			// Positioning closeSymbol, use outerHeight to avoid dimension unit error
+			$closeSymbol.css({
+				right: 0,
+				top: ($wrapper.outerHeight() - $closeSymbol.outerHeight()) / 1.8,
+				width: $closeSymbol.outerHeight()
+			});
+
+			// Add right padding to input
+			$this.css({paddingRight: $closeSymbol.outerWidth()});
+
+			if ($this.val().length >= 1 && options.showOnLoad === true) $closeSymbol.show();
 
 			$this.focus(function() {
 				if ($(this).val().length >= 1) {
-					$(this).siblings("a[href='#clear']").show();
+					$closeSymbol.show();
 				}
 			});
 
 			$this.blur(function() {
 				var self = this;
-
 				if (options.hideOnBlur) {
 					setTimeout(function() {
-						$(self).siblings("a[href='#clear']").hide();
+						$closeSymbol.hide();
 					}, 50);
 				}
 			});
 
 			$this.keyup(function() {
 				if ($(this).val().length >= 1) {
-					$(this).siblings("a[href='#clear']").show();
+					$closeSymbol.show();
 				} else {
-					$(this).siblings("a[href='#clear']").hide();
+					$closeSymbol.hide();
 				}
 			});
 
-			$("a[href='#clear']").click(function(e) {
+			$closeSymbol.on("tap click", function(e) {
 				$(this).siblings(me.element).val("");
 				$(this).hide();
 				if (options.returnFocus === true) {
@@ -89,15 +124,17 @@
 				e.preventDefault();
 			});
 		}
-
 	};
 
 	$.fn[pluginName] = function(options) {
+		if (!$(this).length) {return this;}
 		return this.each(function() {
 			if (!$.data(this, "plugin_" + pluginName)) {
 				$.data(this, "plugin_" + pluginName,
 					new Plugin(this, options));
-			}
+				} else {
+					console.log(pluginName + ' already bind, skipping. Selected element is: ', this);
+				};
 		});
 	};
 
