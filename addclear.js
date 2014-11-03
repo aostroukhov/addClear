@@ -1,14 +1,15 @@
 // Author: Stephen Korecky
 // Website: http://stephenkorecky.com
 // Plugin Website: http://github.com/skorecky/Add-Clear
-
-;(function($, window, document, undefined) {
+;
+(function ($, window, document, undefined) {
 
 	// Create the defaults once
 	var pluginName = "addClear",
 		defaults = {
-			closeSymbol: "&#10006;",
-			color: "#cccccc",
+			//closeSymbol: "&#10006;",
+			closeSymbol: "&#215;", //Multiplication sign
+			color: "#999",
 			returnFocus: true,
 			showOnLoad: true,
 			onClear: null,
@@ -29,10 +30,10 @@
 
 	Plugin.prototype = {
 
-		init: function() {
+		init: function () {
 			var $this = $(this.element),
-					me = this,
-					options = this.options;
+				me = this,
+				options = this.options;
 
 			var $wrapper = $this.wrap("<div style='position:relative;display:inline-block;margin:0;padding:0;'/>").parent();
 			var $closeSymbol = $this.after("<div style='display: none;'>" + options.closeSymbol + "</div>").next();
@@ -49,7 +50,6 @@
 				'-webkit-touch-callout': 'none',
 				'-webkit-user-select': 'none'
 			});
-
 
 			// Copy the essential styles (mimics) from input to the closeSymbol
 			var mimics = [
@@ -68,57 +68,67 @@
 			while(i--) $closeSymbol.css(mimics[i].toString(), $this[0].style[mimics[i].toString()]);
 
 			// Fix width of input
-			if ($this[0].style['width'].indexOf('%') > 0) {
-					$wrapper.css({'width': $this[0].style['width']});
-					$this.css({'width': '100%'});
+			if($this[0].style['width'].indexOf('%') > 0) {
+				$wrapper.css({
+					'width': $this[0].style['width']
+				});
+				$this.css({
+					'width': '100%'
+				});
 			}
 
 			// Move css float from input to wrapper
-			$wrapper.css({'float': $this[0].style.cssFloat});
-			$this.css({'float': ''});
+			$wrapper.css({
+				'float': $this[0].style.cssFloat
+			});
+			$this.css({
+				'float': ''
+			});
 
 			// Positioning closeSymbol, use outerHeight to avoid dimension unit error
 			$closeSymbol.css({
 				right: 0,
-				top: ($wrapper.outerHeight() - $closeSymbol.outerHeight()) / 1.8,
+				top: ($wrapper.outerHeight() - $closeSymbol.outerHeight()) / 2,
 				width: $closeSymbol.outerHeight()
 			});
 
 			// Add right padding to input
-			$this.css({paddingRight: $closeSymbol.outerWidth()});
+			$this.css({
+				paddingRight: $closeSymbol.outerWidth()
+			});
 
-			if ($this.val().length >= 1 && options.showOnLoad === true) $closeSymbol.show();
+			if($this.val().length >= 1 && options.showOnLoad === true) $closeSymbol.show();
 
-			$this.focus(function() {
-				if ($(this).val().length >= 1) {
+			$this.focus(function () {
+				if($(this).val().length >= 1) {
 					$closeSymbol.show();
 				}
 			});
 
-			$this.blur(function() {
+			$this.blur(function () {
 				var self = this;
-				if (options.hideOnBlur) {
-					setTimeout(function() {
+				if(options.hideOnBlur) {
+					setTimeout(function () {
 						$closeSymbol.hide();
 					}, 50);
 				}
 			});
 
-			$this.keyup(function() {
-				if ($(this).val().length >= 1) {
+			$this.keyup(function () {
+				if($(this).val().length >= 1) {
 					$closeSymbol.show();
 				} else {
 					$closeSymbol.hide();
 				}
 			});
 
-			$closeSymbol.on("tap click", function(e) {
+			$closeSymbol.on("tap click", function (e) {
 				$(this).siblings(me.element).val("");
 				$(this).hide();
-				if (options.returnFocus === true) {
+				if(options.returnFocus === true) {
 					$(this).siblings(me.element).focus();
 				}
-				if (options.onClear) {
+				if(options.onClear) {
 					options.onClear($(this).siblings("input"));
 				}
 				e.preventDefault();
@@ -126,15 +136,17 @@
 		}
 	};
 
-	$.fn[pluginName] = function(options) {
-		if (!$(this).length) {return this;}
-		return this.each(function() {
-			if (!$.data(this, "plugin_" + pluginName)) {
+	$.fn[pluginName] = function (options) {
+		if(!$(this).length) {
+			return this;
+		}
+		return this.each(function () {
+			if(!$.data(this, "plugin_" + pluginName)) {
 				$.data(this, "plugin_" + pluginName,
 					new Plugin(this, options));
-				} else {
-					console.log(pluginName + ' already bind, skipping. Selected element is: ', this);
-				};
+			} else {
+				console.log(pluginName + ' already bind, skipping. Selected element is: ', this);
+			};
 		});
 	};
 
