@@ -1,4 +1,4 @@
-// Author: Stephen Korecky
+//
 // Website: http://stephenkorecky.com
 // Plugin Website: http://github.com/skorecky/Add-Clear
 ;
@@ -13,7 +13,8 @@
 			returnFocus: true,
 			showOnLoad: true,
 			onClear: null,
-			hideOnBlur: false
+			hideOnBlur: false,
+			addCssRule: false
 		};
 
 	// The actual plugin constructor
@@ -31,9 +32,52 @@
 	Plugin.prototype = {
 
 		init: function () {
+
 			var $this = $(this.element),
 				me = this,
 				options = this.options;
+
+
+			var addCssRule = function(/* string */ selector, /* string */ rule) {
+				if (document.styleSheets) {
+					if (!document.styleSheets.length) {
+						var head = document.getElementsByTagName('head')[0];
+						head.appendChild(bc.createEl('style'));
+					}
+
+					var i = document.styleSheets.length-1;
+					var ss = document.styleSheets[i];
+
+					var l=0;
+					if (ss.cssRules) {
+						l = ss.cssRules.length;
+					} else if (ss.rules) {
+						// IE
+						l = ss.rules.length;
+					}
+
+					try {
+						if (ss.insertRule) {
+							ss.insertRule(selector + ' {' + rule + '}', l);
+						} else if (ss.addRule) {
+							// IE
+							ss.addRule(selector, rule, l);
+						}
+					} catch (e) {
+						console.log(e.name)
+					} finally {
+						// console.log("finished")
+					}
+				}
+			};
+
+
+			if(options.addCssRule) {
+				// WebKIT
+				addCssRule('input[type="search"]::-webkit-search-cancel-button', 'display: none;');
+				// IE
+				addCssRule('::-ms-clear', 'display: none;');
+			}
 
 			var $wrapper = $this.wrap("<div style='position:relative;display:inline-block;margin:0;padding:0;'/>").parent();
 			var $closeSymbol = $this.after("<div style='display: none;'>" + options.closeSymbol + "</div>").next();
