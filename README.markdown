@@ -52,16 +52,6 @@ $("input").addClear({
     <td>string</td>
   </tr>
   <tr>
-    <td>top</td>
-    <td>1</td>
-    <td>number</td>
-  </tr>
-  <tr>
-    <td>right</td>
-    <td>4</td>
-    <td>number</td>
-  </tr>
-  <tr>
     <td>returnFocus</td>
     <td>true</td>
     <td>boolean</td>
@@ -85,5 +75,5 @@ $("input").addClear({
 
 #### Using Options
 ```javascript
-$("input").addClear({top : -2, right : 6});
+$("input").addClear();
 ```
