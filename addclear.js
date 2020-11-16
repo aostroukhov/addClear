@@ -1,7 +1,12 @@
-//
-// Website: http://stephenkorecky.com
-// Plugin Website: http://github.com/skorecky/Add-Clear
+/*
+
+	Base on plugin http://github.com/skorecky/Add-Clear
+
+*/
 ;(function ($, window, document, undefined) {
+
+	'use strict';
+
 	// Create the defaults once
 	var pluginName = "addClear",
 		defaults = {
@@ -9,7 +14,8 @@
 			showOnLoad: true,
 			onClear: null,
 			hideOnBlur: false,
-			addCssRule: false
+			addCssRule: false,
+			elementPaddingRight: 0
 		};
 
 	// The actual plugin constructor
@@ -28,9 +34,11 @@
 
 		init: function () {
 
-			var $this = $(this.element),
-				me = this,
-				options = this.options;
+			var me = this,
+				$this = $(me.element),
+				options = me.options;
+
+			options.type = me.element.type; /* 'input' or 'textarea' */
 
 			if(options.addCssRule) {
 				// WebKIT and IE
@@ -87,9 +95,8 @@
 					parent.style.display = originalDisplay;
 				}
 				return result;
-			};
-
-			var getRealStyle = function(domNode, properties) {
+			},
+			getRealStyle = function(domNode, properties) {
 				var parent = domNode.parentNode;
 				var originalDisplay = parent.style.display;
 				parent.style.display = 'none'; // этот трюк не работает с flexbox
@@ -98,101 +105,133 @@
 				return result;
 			};
 
-			var wrapperCss = {}, thisCss = {};
+
+			// Move css float and margin from input to wrapper
+			var thisCss = {},
+				wrapperCss = getFinalStyle( $this[0], [
+					'cssFloat',
+					'marginTop',
+					'marginRight',
+					'marginBottom',
+					'marginLeft'
+				]);
+
+			thisCss.float = "";
+			thisCss.marginTop = 0;
+			thisCss.marginRight = 0;
+			thisCss.marginBottom = 0;
+			thisCss.marginLeft = 0;
+
+
 			// Fix width of input
 			var styleWidth;
 			//styleWidth = getFinalStyle($this[0], 'width').width; // так выдаёт ширину в пикселах
 			styleWidth = getRealStyle($this[0], 'width'); // так выдаёт ширину в пикселах
 			if(styleWidth.indexOf('%') > 0) {
-				$.extend(wrapperCss, { 'width': styleWidth } );
-				$.extend(thisCss, { 'width': '100%' } );
+				wrapperCss.width = styleWidth;
+				thisCss.width = '100%';
 			}
 
-			// Move css float from input to wrapper
-			$.extend(wrapperCss, { 'float': getFinalStyle($this[0], 'cssFloat').cssFloat } );
-			$.extend(thisCss, { 'float': '' } );
 
-			var $wrapper = $this.css(thisCss).wrap("<div class=\"addClear__wrapper\"/>").parent().addClass(wrapperClasses.join()).css(wrapperCss),
-				$closeSymbol = $this.after("<div class=\"addClear__closeSymbol\"/>").next();
+			var $wrapper = $this.css(thisCss).wrap("<div class=\"" + pluginName + "__wrapper\"/>").parent().addClass(wrapperClasses.join()).css(wrapperCss),
 
-			// Copy the essential styles (mimics) from input to the closeSymbol
-			var mimics = [
-				'paddingTop',
-				'paddingBottom',
-				'fontSize',
-				'fontStyle',
-				'fontFamily',
-				'fontWeight',
-				'lineHeight',
-				'wordSpacing',
-				'letterSpacing',
-				'textTransform'
-			];
-			var i = mimics.length;
-			while(i--) $closeSymbol.css(mimics[i].toString(), $this[0].style[mimics[i].toString()]);
+				// Copy the essential styles (mimics) from input to the button
+				$button = $this.after("<div class=\"" + pluginName + "__button\"/>")
+					.next()
+					.css( getFinalStyle($this[0], [
+						'paddingTop',
+						'paddingRight',
+						'fontSize',
+						'fontStyle',
+						'fontFamily',
+						'fontWeight',
+						'lineHeight',
+						'wordSpacing',
+						'letterSpacing',
+						'textTransform'
+					]));
 
-
-			// Positioning closeSymbol, use outerHeight to avoid dimension unit error
-			$closeSymbol.css({
-				right: $this.css("padding-right"),
-				top: ($this.outerHeight(false) + parseInt($this.css("margin-top"),10) - $closeSymbol.outerHeight()) / 2,
-				width: $closeSymbol.outerHeight()
-			});
 
 			// Add right padding to input
-			$this.css({
-				paddingRight: $this.css("padding-right") + $closeSymbol.outerWidth()
-			});
+			$this.css( "paddingRight", options.elementPaddingRight + $button.outerWidth() );
 
-			if($this.val().length >= 1 && options.showOnLoad === true) $closeSymbol.show();
 
-			$this.focus(function () {
-				if($(this).val().length >= 1) {
-					$closeSymbol.show();
-				}
-			});
+			var getHasScrollbar = function (el) {
+					return el.clientHeight < el.scrollHeight;
+				},
+				positioningButton = function() {
 
-			$this.blur(function () {
-				var self = this;
-				if(options.hideOnBlur) {
-					setTimeout(function () {
-						$closeSymbol.hide();
-					}, 50);
-				}
-			});
+					var hasScrollbar = getHasScrollbar($this[0]);
+
+					if( options.hasScrollbar !== hasScrollbar ) {
+
+						options.hasScrollbar = hasScrollbar;
+
+						// Positioning closeSymbol, use outerHeight to avoid dimension unit error
+						var css = {
+							right: ($this.outerWidth(true) - $this.innerWidth()) / 2 + (hasScrollbar ? 17 : 0),
+							top: ($this.outerHeight(true) - $this.innerHeight()) / 2
+						};
+
+						$button.css( css );
+
+					}
+
+				};
+
+
+			positioningButton();
+
+
+			if($this.val().length >= 1 && options.showOnLoad === true) $button.show();
+
+			$this
+				.on("focus." + pluginName, function () {
+					if($(this).val().length >= 1) {
+						$button.show();
+					}
+				})
+				.on("blur." + pluginName, function () {
+					var self = this;
+					if(options.hideOnBlur) {
+						setTimeout(function () {
+							$button.hide();
+						}, 50);
+					}
+				});
+
 
 			//$this.on("keyup keydown change update cute paste", function () {
-			$this.on("input", function () {
+			$this.on("resize update input", function () {
+				clearTimeout( options.repositionTimer );
 				if($(this).val().length >= 1) {
-					$closeSymbol.show();
+					$button.show();
+					options.repositionTimer = setTimeout( positioningButton, 150 );
 				} else {
-					$closeSymbol.hide();
+					$button.hide();
 				}
 			});
 
-			$closeSymbol.on("tap click", function (e) {
-				var $input = $(me.element);
-				$input
-					.val("")
-					.trigger("input"); // нужно, чтобы отработали другие вызовы на изменение поля
-				$(this).css({display: 'none'});
-				if (options.returnFocus === true) {
-					$input.focus();
-				}
-				if (options.onClear) {
-					options.onClear($input);
-				}
-				e.preventDefault();
-			});
+			$button
+				.on("tap click", function (e) {
+					$this
+						.val("")
+						.trigger("input"); // нужно, чтобы отработали другие вызовы на изменение поля
+					$button.hide();
+					if (options.returnFocus === true) {
+						$this[0].focus();
+					}
+					if (options.onClear) {
+						options.onClear($this);
+					}
+					e.preventDefault();
+				})
+				.attr("title", "Очистить");
 		}
 	};
 
-	$.fn[pluginName] = function (options) {
-
-		// If the array is empty, do nothing
-		if(!$(this).length) {	return this; }
-
-		return this.each(function () {
+	$.fn[pluginName] = function ( options ) {
+		return this.each( function () {
 			if( ! $.data( this, "plugin_" + pluginName ) ) {
 				$.data(this, "plugin_" + pluginName, new Plugin(this, options));
 			} else {
