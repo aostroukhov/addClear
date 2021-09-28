@@ -1,6 +1,6 @@
 /*
 
-	Base on plugin http://github.com/skorecky/Add-Clear
+	Based on plugin http://github.com/skorecky/Add-Clear
 
 */
 ;(function ($, window, document, undefined) {
@@ -8,7 +8,7 @@
 	'use strict';
 
 	// Create the defaults once
-	var pluginName = "addClear",
+	var pluginName = 'addClear',
 		defaults = {
 			returnFocus: true,
 			showOnLoad: true,
