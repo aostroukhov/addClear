@@ -1,3 +1,4 @@
+/*jshint esversion:6*/
 /*
 
 	Based on plugin http://github.com/skorecky/Add-Clear
@@ -7,8 +8,7 @@
 
 	'use strict';
 
-	// Create the defaults once
-	var pluginName = 'addClear',
+	const pluginName = 'addClear',
 		defaults = {
 			returnFocus: true,
 			showOnLoad: true,
@@ -21,12 +21,9 @@
 	// The actual plugin constructor
 	function Plugin(element, options) {
 		this.element = element;
-
 		this.options = $.extend({}, defaults, options);
-
 		this._defaults = defaults;
 		this._name = pluginName;
-
 		this.init();
 	}
 
@@ -38,14 +35,14 @@
 				$this = $(me.element),
 				options = me.options;
 
-			options.type = me.element.type; /* 'input' or 'textarea' */
+			options.type = me.element.type; // 'input' or 'textarea'
 
 			if(options.addCssRule) {
 				// WebKIT and IE
-				$("<style>")
-					.attr("type", "text/css")
+				$('<style>')
+					.attr('type', 'text/css')
 					.html('input[type="search"]::-webkit-search-cancel-button{display:none;}::-ms-clear{display:none;}')
-					.appendTo("head");
+					.appendTo('head');
 			}
 
 
@@ -63,7 +60,7 @@
 				],
 				thisClasses = getClassList($this[0]),
 					wrapperClasses = $.grep(thisClasses, function (className) {
-					for (var i = 0; i < classesToCopy.length; i++) {
+					for (let i = 0; i < classesToCopy.length; i++) {
 						if ((new RegExp(classesToCopy[i], 'i')).test(className)) {
 							return true;
 						}
@@ -99,7 +96,7 @@
 			getRealStyle = function(domNode, properties) {
 				var parent = domNode.parentNode;
 				var originalDisplay = parent.style.display;
-				parent.style.display = 'none'; // этот трюк не работает с flexbox
+				parent.style.display = 'none'; // this trick not work in FireFox
 				var result = $(domNode).css(properties);
 				parent.style.display = originalDisplay;
 				return result;
@@ -116,7 +113,7 @@
 					'marginLeft'
 				]);
 
-			thisCss.float = "";
+			thisCss.float = 'unset';
 			thisCss.marginTop = 0;
 			thisCss.marginRight = 0;
 			thisCss.marginBottom = 0;
@@ -125,56 +122,68 @@
 
 			// Fix width of input
 			var styleWidth;
-			//styleWidth = getFinalStyle($this[0], 'width').width; // так выдаёт ширину в пикселах
-			styleWidth = getRealStyle($this[0], 'width'); // так выдаёт ширину в пикселах
+			//styleWidth = getFinalStyle($this[0], 'width').width;
+			styleWidth = getRealStyle($this[0], 'width');
 			if(styleWidth.indexOf('%') > 0) {
 				wrapperCss.width = styleWidth;
 				thisCss.width = '100%';
 			}
 
 
-			var $wrapper = $this.css(thisCss).wrap("<div class=\"" + pluginName + "__wrapper\"/>").parent().addClass(wrapperClasses.join()).css(wrapperCss),
+			var $wrapper = $('<div class="' + pluginName + '__wrapper"/>').addClass(wrapperClasses.join()).css(wrapperCss);
+			//console.log(`$wrapper: ${$wrapper}`);//debug
 
-				// Copy the essential styles (mimics) from input to the button
-				$button = $this.after("<div class=\"" + pluginName + "__button\"/>")
-					.next()
-					.css( getFinalStyle($this[0], [
-						'paddingTop',
-						'paddingRight',
-						'fontSize',
-						'fontStyle',
-						'fontFamily',
-						'fontWeight',
-						'lineHeight',
-						'wordSpacing',
-						'letterSpacing',
-						'textTransform'
-					]));
+			$this.css(thisCss).wrap($wrapper);
 
+			var copyStyles = [
+					'paddingRight',
+					'fontSize',
+					'fontStyle',
+					'fontWeight',
+					'lineHeight',
+					'wordSpacing',
+					'letterSpacing',
+					'textTransform'
+				];
+
+			// Для textarea нужен еще отступ сверху
+			if(options.type == 'textarea') copyStyles.push('paddingTop');
+
+
+			var $button = $('<div class="' + pluginName + '__button"/>');
+
+			// Copy the essential styles (mimics) from input to the button
+			var buttonCss = getFinalStyle($this[0], copyStyles);
+
+			$button.css(buttonCss);
+
+			$this.after($button);
 
 			// Add right padding to input
-			$this.css( "paddingRight", options.elementPaddingRight + $button.outerWidth() );
+			$this.css('paddingRight', (parseInt(buttonCss.paddingRight) + parseInt($button.outerWidth())) + 'px');
 
 
-			var getHasScrollbar = function (el) {
-					return el.clientHeight < el.scrollHeight;
+
+			var getHasVerticalScrollbar = function (element) {
+					// Проверяем, есть ли у элемента вертикальный скроллбар
+					//return element[0].scrollHeight > element.innerHeight(); // старый вариант с использованием jQuery innerHeight()
+					return element[0].scrollHeight > element[0].clientHeight;
 				},
 				positioningButton = function() {
-
-					var hasScrollbar = getHasScrollbar($this[0]);
-
+					var hasScrollbar = getHasVerticalScrollbar($this);
+					//console.log(`hasScrollbar: ${hasScrollbar}`); //debug
+					// Если появился или исчез вертикальный скролбар
 					if( options.hasScrollbar !== hasScrollbar ) {
-
 						options.hasScrollbar = hasScrollbar;
-
-						// Positioning closeSymbol, use outerHeight to avoid dimension unit error
-						var css = {
-							right: ($this.outerWidth(true) - $this.innerWidth()) / 2 + (hasScrollbar ? 17 : 0),
-							top: ($this.outerHeight(true) - $this.innerHeight()) / 2
-						};
-
-						$button.css( css );
-
+						var buttonCss = {};
+						if(options.type == 'textarea') {
+							buttonCss.top = ($this.outerHeight(true) - $this.innerHeight()) / 2;
+							buttonCss.right = (($this.outerWidth(true) - $this.innerWidth()) / 2 + (hasScrollbar ? 17 : 0)) + 'px';
+						} else {
+							buttonCss.top = 'calc(50% - 1ch)';
+							buttonCss.right = (($this.outerWidth(true) - $this.innerWidth()) / 2 + (hasScrollbar ? 17 : 0)) + 'px';
+						}
+						$button.css(buttonCss);
 					}
 
 				};
@@ -186,12 +195,12 @@
 			if($this.val().length >= 1 && options.showOnLoad === true) $button.show();
 
 			$this
-				.on("focus." + pluginName, function () {
+				.on('focus.' + pluginName, function () {
 					if($(this).val().length >= 1) {
 						$button.show();
 					}
 				})
-				.on("blur." + pluginName, function () {
+				.on('blur.' + pluginName, function () {
 					var self = this;
 					if(options.hideOnBlur) {
 						setTimeout(function () {
@@ -201,8 +210,7 @@
 				});
 
 
-			//$this.on("keyup keydown change update cute paste", function () {
-			$this.on("resize update input", function () {
+			$this.on('resize update input heightchange', function () {
 				clearTimeout( options.repositionTimer );
 				if($(this).val().length >= 1) {
 					$button.show();
@@ -213,10 +221,10 @@
 			});
 
 			$button
-				.on("tap click", function (e) {
+				.on('tap click', function (e) {
 					$this
-						.val("")
-						.trigger("input"); // нужно, чтобы отработали другие вызовы на изменение поля
+						.val('')
+						.trigger('input'); // fire others triggers on input
 					$button.hide();
 					if (options.returnFocus === true) {
 						$this[0].focus();
@@ -224,16 +232,18 @@
 					if (options.onClear) {
 						options.onClear($this);
 					}
+					e.stopImmediatePropagation();	 // без этого срабатывает клик на родительских элементах
+					e.stopPropagation();	 // без этого срабатывает клик на родительских элементах
 					e.preventDefault();
 				})
-				.attr("title", "Очистить");
+				.attr('title', 'Очистить');
 		}
 	};
 
 	$.fn[pluginName] = function ( options ) {
 		return this.each( function () {
-			if( ! $.data( this, "plugin_" + pluginName ) ) {
-				$.data(this, "plugin_" + pluginName, new Plugin(this, options));
+			if( ! $.data( this, 'plugin_' + pluginName ) ) {
+				$.data(this, 'plugin_' + pluginName, new Plugin(this, options));
 			} else {
 				console.log(pluginName + ' already bind, skipping. Selected element is: ', this);
 			}
